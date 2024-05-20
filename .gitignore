@@ -1,0 +1,9 @@
+#Ignored files
+imgui.ini
+x64/
+Quizz/
+plugins/
+AlphaSoftware/*
+.git
+.vs
+Quizz.*
