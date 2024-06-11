@@ -232,7 +232,7 @@ namespace Alpha
 		bool result{ false };
 		try 
 		{
-			*getConnection() << "BEGIN TRANSACTION;";
+			*getConnection() << "BEGIN TRANSACTION";
 			logMessage(L"Begin");
 			result = true;
 		}
@@ -248,7 +248,7 @@ namespace Alpha
 		bool result{ false };
 		try 
 		{
-			*getConnection() << "COMMIT;";
+			*getConnection() << "COMMIT";
 			logMessage(L"Commit");
 			result = true;
 		}
@@ -264,7 +264,7 @@ namespace Alpha
 		bool result{ false };
 		try 
 		{
-			*getConnection() << "ROLLBACK;";
+			*getConnection() << "ROLLBACK";
 			logMessage(L"Rollback");
 			result = true;
 		}

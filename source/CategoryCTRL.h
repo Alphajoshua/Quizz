@@ -1,5 +1,6 @@
 #pragma once
 #include "BaseObjectCTRL.h"
+#include <vector>
 
 namespace Alpha
 {
@@ -44,6 +45,8 @@ namespace Alpha
 		void addCategory( const SharedPtr<Category>& category );
 		void modifyCategory(const SharedPtr<Category>& category);
 		void removeCategory(const SharedPtr<Category>& category);
+
+		SharedPtr<std::vector<SharedPtr<Category>>> loadColCategory()const;
 
 	protected:
 

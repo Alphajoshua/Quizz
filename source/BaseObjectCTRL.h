@@ -56,7 +56,6 @@ namespace Alpha
 		bool modifyBaseObject(const SharedPtr<BaseObject>& baseObject);
 		bool removeBaseObject(const SharedPtr<BaseObject>& baseObject);
 
-	private:
 #pragma endregion
 
 	private:

@@ -56,6 +56,7 @@ namespace Alpha
 	void ManageCategoryPage::init()
 	{
 		getCategoryCTRL()->setDataBaseConnection(getParent()->getCultureDataBaseConnection());
+		setColCategory(getCategoryCTRL()->loadColCategory());
 
 		setBackGroundColor({ 0.18f, 0.32f, 0.62f, 1.0f });
 

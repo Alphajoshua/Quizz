@@ -112,13 +112,12 @@ namespace Alpha
 			if (index < colColumn->size() - 1)
 				query += L", ";
 		}
-		query += L");";
+		query += L")";
 
 		try
 		{
-			dbConnection->begin(),
-			*connection << StringToolBox::getUtf8(query).c_str();
-			auto statement = *connection << StringToolBox::getUtf8(query).c_str();
+			dbConnection->begin();
+			auto statement = *connection << StringToolBox::getUtf8(query);
 			updateQueryValues(baseObject, statement);
 			statement.execute();
 
@@ -126,7 +125,9 @@ namespace Alpha
 			UnicodeString message = L": INSERT INTO : ";
 			for (const auto& col : *colColumn)
 			{
-				message += col + L", ";
+				message += col;
+				if(colColumn->size()>1 ) 
+					message += L", ";
 			}
 			logMessage(getTableName() + message);
 			updateObjectValues(baseObject, statement);

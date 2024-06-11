@@ -47,7 +47,8 @@ namespace Alpha
 	void CategoryCTRL::updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
 	{
 		const auto category = refCast<Category>(baseObject);
-		statement << StringToolBox::getUtf8(category->getName()).c_str();
+		const auto name = StringToolBox::getUtf8(category->getName());
+		statement << name;
 	}
 
 	void CategoryCTRL::updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
@@ -75,6 +76,27 @@ namespace Alpha
 	void CategoryCTRL::removeCategory(const SharedPtr<Category>& category)
 	{
 		removeBaseObject(refCast<BaseObject>(category));
+	}
+
+	SharedPtr<std::vector<SharedPtr<Category>>> CategoryCTRL::loadColCategory() const
+	{
+		const auto colCategory = refNew<std::vector<SharedPtr<Category>>>();
+		const auto connection = getDataBaseConnection()->getConnection();
+		try {
+			*connection << "SELECT id, name FROM CATEGORY" >> [&](int id, const AlphaString& name) 
+			{ 
+				const auto category = refNew<Category>();
+				category->setId(id);
+				category->setName(StringToolBox::getUnicodeString(name));
+				colCategory->push_back(category);
+			};
+		}
+		catch( const sqlite::sqlite_exception& e ) {
+			std::cerr << "SQLite error: " << e.what() << std::endl;
+		}
+
+		
+		return colCategory;
 	}
 
 #pragma endregion
