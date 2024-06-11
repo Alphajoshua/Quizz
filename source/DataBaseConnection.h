@@ -1,6 +1,6 @@
 #pragma once
 #include "BaseObject.h"
-#include "sqlite3.h"
+#include "sqlite_modern_cpp.h"
 
 namespace Alpha
 {
@@ -12,6 +12,7 @@ namespace Alpha
 #pragma region Constructors/Destructors
 
 		DataBaseConnection();
+		DataBaseConnection( const UnicodeString& name );
 		~DataBaseConnection();
 
 #pragma endregion
@@ -41,30 +42,39 @@ namespace Alpha
 #pragma region **** Methods ****
 
 	public:
+
+		SharedPtr<sqlite::database> getConnection()const;
+		void setConnection(const SharedPtr<sqlite::database>& object);
+
 		bool connect();
 		bool disconnect();
 
+		void checkTable(const UnicodeString& tableName, const UnicodeString& columnsDefinition);
 		void checkTables();
 		void checkTableQuestion();
 		void checkTableCategory();
 		void checkTableLink();
-		
-		int prepareQuery(const UnicodeString& query, sqlite3_stmt** stmt);
-		int executeQuery(const UnicodeString& query, AlphaChar* err_msg);
-		void cleanExecuteQuery(int code, AlphaChar* err_msg);
+
+		bool executeQuery(const UnicodeString& query);
+		void cleanExecuteQuery(const UnicodeString& query);
 		
 		int getLastInsertedId();
 
-		void finalizeStatement(sqlite3_stmt* stmt, const UnicodeString& tableName);
-		void commit();
-		void rollBack();
+		bool begin();
+		bool commit();
+		bool rollBack();
 
-		void logQueryPreparationFailed();
+		void logQueryExecutionSuccess();
+		void logQueryExecutionSuccess(const UnicodeString& query);
+		void logQueryExecutionFailed(const sqlite::sqlite_exception& e);
+		void logQueryExecutionFailed(const UnicodeString& query);
+		void logQueryPreparationFailed(const sqlite::sqlite_exception& e);
 	protected:
 
 	private:
-		UnicodeString getTableExistQuery(const UnicodeString& tableName);
-		UnicodeString getTableInfoQuery(const UnicodeString& tableName);
+		bool isTableExist(const SharedPtr<sqlite::database>& connection, const UnicodeString& tableName);
+		UnicodeString getTableExistQuery(const UnicodeString& tableName)const ;
+		UnicodeString getTableInfoQuery(const UnicodeString& tableName)const ;
 #pragma endregion
 
 	private:

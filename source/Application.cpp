@@ -140,10 +140,13 @@ namespace Alpha
 		}
 
 		//CHECK LOG
+		for( int index{0}; index < 5; ++index )
+			logSeparator();
+	
 		logMessage(L"Initialization...");
 
 		//CHECK DB FILE
-		const auto connection = refNew<DataBaseConnection>();
+		const auto connection = refNew<DataBaseConnection>(dbAcces);
 		if (result = !connection->connect(); result)
 			logError(L"Cannot run the soft without a database");
 		else

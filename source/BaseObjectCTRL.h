@@ -1,10 +1,9 @@
 #pragma once
 #include "BaseObject.h"
-#include "sqlite3.h"
+#include "DataBaseConnection.h"
 
 namespace Alpha
 {
-	class DataBaseConnection;
 	class BaseObjectCTRL :public BaseObject
 	{
 
@@ -50,16 +49,14 @@ namespace Alpha
 	public:
 
 	protected:
-		virtual void updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt) = 0;
-		virtual void updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt) = 0;
+		virtual void updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) = 0;
+		virtual void updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) = 0;
 
 		bool addBaseObject(const SharedPtr<BaseObject>& baseObject);
 		bool modifyBaseObject(const SharedPtr<BaseObject>& baseObject);
 		bool removeBaseObject(const SharedPtr<BaseObject>& baseObject);
 
 	private:
-		void addValueToMessage(sqlite3_stmt** stmt, int index, UnicodeString* message);
-		UnicodeString getColumnValueAsString(sqlite3_stmt** stmt, int index, int type);
 #pragma endregion
 
 	private:

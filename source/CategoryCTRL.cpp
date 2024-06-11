@@ -44,13 +44,13 @@ namespace Alpha
 
 #pragma region **** Heritage ****
 
-	void CategoryCTRL::updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt)
+	void CategoryCTRL::updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
 	{
 		const auto category = refCast<Category>(baseObject);
-		sqlite3_bind_text(*stmt, 1, StringToolBox::getUtf8(category->getName()).c_str(), -1, SQLITE_STATIC);
+		statement << StringToolBox::getUtf8(category->getName()).c_str();
 	}
 
-	void CategoryCTRL::updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt)
+	void CategoryCTRL::updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
 	{
 		const auto category = refCast<Category>(baseObject);
 		category->setId(getDataBaseConnection()->getLastInsertedId());

@@ -21,8 +21,8 @@ namespace Alpha
 	public:
 
 	protected:
-		virtual void updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt) override;
-		virtual void updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt) override;
+		virtual void updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) override;
+		virtual void updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) override;
 
 	private:
 

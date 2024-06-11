@@ -10,6 +10,10 @@ namespace Alpha
 	{
 		return std::make_shared<T>();
 	}
+	template <class T, class... Args>
+	SharedPtr<T> refNew(Args&&... args) {
+		return std::make_shared<T>(std::forward<Args>(args)...);
+	}
 	template <class T, class U>
 	SharedPtr<T> refCast( const std::shared_ptr<U>& ptr )
 	{

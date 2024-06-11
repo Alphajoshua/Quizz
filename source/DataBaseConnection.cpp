@@ -18,7 +18,7 @@ namespace Alpha
 	{
 	public:
 		UnicodeString dataBaseName{ DEFAULT_DB_CONNECTION };
-		sqlite3* connection;
+		SharedPtr<sqlite::database> connection;
 	};
 
 #pragma endregion
@@ -29,6 +29,12 @@ namespace Alpha
 		:d(new Private())
 	{
 
+	}
+
+	DataBaseConnection::DataBaseConnection(const UnicodeString& name)
+		:d(new Private())
+	{
+		setDataBaseName(name);
 	}
 
 	DataBaseConnection::~DataBaseConnection()
@@ -57,38 +63,75 @@ namespace Alpha
 
 #pragma region **** Methods ****
 
+	SharedPtr<sqlite::database> DataBaseConnection::getConnection() const
+	{
+		return d->connection;
+	}
+
+	void DataBaseConnection::setConnection(const SharedPtr<sqlite::database>& object)
+	{
+		d->connection = object;
+	}
+
 	bool DataBaseConnection::connect()
 	{
 		bool result{ false };
 		auto path = std::filesystem::current_path() / SOFTWARE_DIRECTORY / getDataBaseName();
-		auto message = StringToolBox::getUnicodeString(( path.string()).c_str() );
-		int code = sqlite3_open(StringToolBox::getUtf8(path).c_str(), &d->connection);
-
-		if (code == SQLITE_ERROR || code == SQLITE_CANTOPEN )
-			logError(L"Failed connection to db: " + message + L" " + StringToolBox::getUnicodeString(sqlite3_errmsg(d->connection)));
-		else if( code == SQLITE_OK )
+		auto message =  (UnicodeString) path.wstring();
+		try
 		{
+			setConnection(refNew<sqlite::database>(path.string()));
 			result = true;
 			logMessage(L"Succes connection to db: " + message);
 		}
+		catch (const std::exception& e)
+		{
+			logError(L"Failed connection to db: " + message + L" " + UnicodeString(e.what(), e.what() + strlen(e.what())));
+		}
+		
 		return result;
 	}
 
 	bool DataBaseConnection::disconnect()
 	{
-		int code = sqlite3_close(d->connection);
-		bool result = { false };
-		auto path = std::filesystem::current_path() / SOFTWARE_DIRECTORY / getDataBaseName();
-		auto message = StringToolBox::getUnicodeString((path.string()).c_str());
+		bool result{ false };
 
-		if (code == SQLITE_ERROR || code == SQLITE_CANTOPEN)
-			logError(L"Failed disconnection to db: " + message + L" " + StringToolBox::getUnicodeString(sqlite3_errmsg(d->connection)));
-		else if (code == SQLITE_OK)
+		setConnection(nullptr);
+
+		if (const auto connection = getConnection(); !empty(connection))
+			logError(L"Failed disconnection to db: " + getDataBaseName());
+		else
 		{
 			result = true;
-			logMessage(L"Succes disconnection to db: " + message);
+			logMessage(L"Succes disconnection to db: " + getDataBaseName());
 		}
+
 		return result;
+	}
+
+	void DataBaseConnection::checkTable(const UnicodeString& tableName, const UnicodeString& columnsDefinition)
+	{
+		const auto connection = getConnection();
+
+		if (isTableExist(connection, tableName))
+		{
+			logSeparator();
+			logMessage(L"TABLE " + tableName + L" exists");
+
+			// Get the composition of the table
+			try
+			{
+				*connection << StringToolBox::getUtf8(getTableInfoQuery(tableName)) >> [&](int id, AlphaString name, AlphaString type, int notnull, AlphaString dflt_value, int pk)
+					{logMessage(L"ColumnName: " + StringToolBox::getUnicodeString(name) + L", Type: " + StringToolBox::getUnicodeString(type)); };
+			}
+			catch (const sqlite::sqlite_exception& e)
+			{
+				logQueryPreparationFailed(e);
+			}
+			
+		}
+		else
+			cleanExecuteQuery(L"CREATE TABLE IF NOT EXISTS " + tableName + columnsDefinition);
 	}
 
 	void DataBaseConnection::checkTables()
@@ -101,175 +144,155 @@ namespace Alpha
 
 	void DataBaseConnection::checkTableQuestion()
 	{
-		const UnicodeString tableName = L"QUESTION";
-
-		// Vérifier l'existence de la table
-		UnicodeString query = getTableExistQuery(tableName);
-		sqlite3_stmt* stmt;
-		int code = prepareQuery(query, &stmt);
-		if (code != SQLITE_OK)
-			logQueryPreparationFailed();
-		else if (const auto stmtCode = sqlite3_step(stmt); stmtCode == SQLITE_ROW)
-		{
-			logSeparator();
-			logMessage(L"TABLE " + tableName + L" exist");
-
-			// Obtenir la composition de la table
-			query = getTableInfoQuery(tableName);
-			code = prepareQuery(query, &stmt);
-			if (code != SQLITE_OK)
-				logQueryPreparationFailed();
-
-			while (sqlite3_step(stmt) == SQLITE_ROW)
-				logMessage(L"ColumnName: " + StringToolBox::getUnicodeString(sqlite3_column_text(stmt, 1)) + L", Type : " + StringToolBox::getUnicodeString(sqlite3_column_text(stmt, 2)));
-
-			finalizeStatement(stmt, tableName);
-		}
-		else if (stmtCode == SQLITE_DONE)
-		{
-			UnicodeString create_table_query = L"CREATE TABLE IF NOT EXISTS " + tableName;
-			create_table_query += L" ( ID INTEGER PRIMARY KEY AUTOINCREMENT,QUESTION_TITLE TEXT NOT NULL, RIGHT_ANSWER TEXT NOT NULL,"
-			"DUMMY_ANSWER TEXT NOT NULL, WRONG_ANSWER_1 TEXT NOT NULL, WRONG_ANSWER_2 TEXT NOT NULL, WRONG_ANSWER_3 TEXT NOT NULL, WRONG_ANSWER_4 TEXT NOT NULL, WRONG_ANSWER_5 TEXT NOT NULL);";
-			AlphaChar* err_msg = nullptr;
-			code = executeQuery(create_table_query, err_msg);
-			cleanExecuteQuery(code, err_msg);
-			sqlite3_free(err_msg);
-		}
+		UnicodeString columnsDefinition = L" (ID INTEGER PRIMARY KEY AUTOINCREMENT, QUESTION_TITLE TEXT NOT NULL, RIGHT_ANSWER TEXT NOT NULL,"
+			L"DUMMY_ANSWER TEXT NOT NULL, WRONG_ANSWER_1 TEXT NOT NULL, WRONG_ANSWER_2 TEXT NOT NULL, WRONG_ANSWER_3 TEXT NOT NULL, "
+			L"WRONG_ANSWER_4 TEXT NOT NULL, WRONG_ANSWER_5 TEXT NOT NULL, DIFFICULTY INTEGER NOT NULL)";
+		checkTable(L"QUESTION", columnsDefinition);
 	}
 
 	void DataBaseConnection::checkTableCategory()
 	{
-		const UnicodeString tableName = L"CATEGORY";
-
-		// Vérifier l'existence de la table
-		UnicodeString query = getTableExistQuery(tableName);
-		sqlite3_stmt* stmt;
-		int code = prepareQuery(query, &stmt);
-		if (code != SQLITE_OK)
-			logQueryPreparationFailed();
-		else if (const auto stmtCode = sqlite3_step(stmt); stmtCode == SQLITE_ROW)
-		{
-			logSeparator();
-			logMessage(L"TABLE " + tableName + L" exist");
-
-			// Obtenir la composition de la table
-			query = getTableInfoQuery(tableName);
-			code = prepareQuery(query, &stmt);
-			if (code != SQLITE_OK)
-				logQueryPreparationFailed();
-
-			while (sqlite3_step(stmt) == SQLITE_ROW)
-				logMessage(L"ColumnName: " + StringToolBox::getUnicodeString(sqlite3_column_text(stmt, 1)) + L", Type : " + StringToolBox::getUnicodeString(sqlite3_column_text(stmt, 2)));
-
-			finalizeStatement(stmt, tableName);
-		}
-		else if (stmtCode == SQLITE_DONE)
-		{
-			UnicodeString create_table_query = L"CREATE TABLE IF NOT EXISTS " + tableName;
-			create_table_query += L" ( ID INTEGER PRIMARY KEY AUTOINCREMENT,NAME TEXT NOT NULL);";
-			AlphaChar* err_msg = nullptr;
-			code = executeQuery(create_table_query, err_msg);
-			cleanExecuteQuery(code, err_msg);
-			sqlite3_free(err_msg);
-		}
+		UnicodeString columnsDefinition = L" ( ID INTEGER PRIMARY KEY AUTOINCREMENT,NAME TEXT NOT NULL)";
+		checkTable(L"CATEGORY", columnsDefinition);
 	}
 
 	void DataBaseConnection::checkTableLink()
 	{
-		const UnicodeString tableName = L"LINK";
+		UnicodeString columnsDefinition = L" ( ID INTEGER PRIMARY KEY AUTOINCREMENT,QUESTION_ID INTEGER NOT NULL, CATEGORY_ID INTEGER NOT NULL)";
+		checkTable(L"LINK", columnsDefinition);
+	}
 
-		// Vérifier l'existence de la table
+	bool DataBaseConnection::isTableExist(const SharedPtr<sqlite::database>& connection, const UnicodeString& tableName)
+	{
 		UnicodeString query = getTableExistQuery(tableName);
-		sqlite3_stmt* stmt;
-		int code = prepareQuery(query, &stmt);
-		if (code != SQLITE_OK)
-			logQueryPreparationFailed();
-		else if (const auto stmtCode = sqlite3_step(stmt); stmtCode == SQLITE_ROW)
+		bool tableExist{ false };
+		try
 		{
-			logSeparator();
-			logMessage(L"TABLE " + tableName + L" exist");
-
-			// Obtenir la composition de la table
-			query = L"PRAGMA table_info(" + tableName + L");";
-			code = prepareQuery(query, &stmt);
-			if (code != SQLITE_OK)
-				logQueryPreparationFailed();
-
-			while (sqlite3_step(stmt) == SQLITE_ROW)
-				logMessage(L"ColumnName: " + StringToolBox::getUnicodeString(sqlite3_column_text(stmt, 1)) + L", Type : " + StringToolBox::getUnicodeString(sqlite3_column_text(stmt, 2)));
-
-			finalizeStatement(stmt, tableName);
+			*connection << StringToolBox::getUtf8(query) >> [&](AlphaString name) {tableExist = true; };
 		}
-		else if (stmtCode == SQLITE_DONE)
+		catch (const sqlite::sqlite_exception& e)
 		{
-			UnicodeString create_table_query = L"CREATE TABLE IF NOT EXISTS " + tableName;
-			create_table_query += L" ( ID INTEGER PRIMARY KEY AUTOINCREMENT,QUESTION_ID INTEGER NOT NULL, CATEGORY_ID INTEGER NOT NULL);";
-			AlphaChar* err_msg = nullptr;
-			code = executeQuery(create_table_query, err_msg);
-			cleanExecuteQuery(code, err_msg);
-			sqlite3_free(err_msg);
+			logQueryPreparationFailed(e);
 		}
+		return tableExist;
 	}
 
-	void DataBaseConnection::logQueryPreparationFailed()
+	UnicodeString DataBaseConnection::getTableExistQuery(const UnicodeString& tableName) const
 	{
-		logError(L"Query preparation : " + StringToolBox::getUnicodeString(sqlite3_errmsg(d->connection)));
+		return L"SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + L"'";
 	}
 
-	UnicodeString DataBaseConnection::getTableExistQuery(const UnicodeString& tableName)
+	UnicodeString DataBaseConnection::getTableInfoQuery(const UnicodeString& tableName) const
 	{
-		return L"SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + L"';";
+		return L"PRAGMA table_info(" + tableName + L")";
 	}
 
-	UnicodeString DataBaseConnection::getTableInfoQuery(const UnicodeString& tableName)
+	void DataBaseConnection::logQueryPreparationFailed(const sqlite::sqlite_exception& e)
 	{
-		return L"PRAGMA table_info(" + tableName + L");";
+		logError(L"Failed to prepare query: " + UnicodeString(e.what(), e.what() + strlen(e.what())));
 	}
 
-	int DataBaseConnection::prepareQuery(const UnicodeString& query, sqlite3_stmt** stmt)
+	bool DataBaseConnection::executeQuery(const UnicodeString& query)
 	{
-		return sqlite3_prepare_v2(d->connection, StringToolBox::getUtf8(query).c_str(), -1, stmt, NULL);;
-	}
-
-	int DataBaseConnection::executeQuery(const UnicodeString& query, AlphaChar* err_msg)
-	{
-		logMessage(L"Execute query: " + query);
-		return sqlite3_exec(d->connection, StringToolBox::getUtf8(query).c_str(), nullptr, nullptr, &err_msg);
-	}
-
-	void DataBaseConnection::cleanExecuteQuery(int code, AlphaChar* err_msg)
-	{
-		if (code != SQLITE_OK)
+		bool result{ false };
+		try 
 		{
-			rollBack();
-			logError(StringToolBox::getUnicodeString(err_msg));
+			*getConnection() << StringToolBox::getUtf8(query);
+			result = true;
+		}
+		catch (const sqlite::sqlite_exception& e) 
+		{
+			logQueryExecutionFailed(e);
+		}
+		return result;
+	}
+
+	void DataBaseConnection::cleanExecuteQuery(const UnicodeString& query)
+	{
+		begin();
+		if (executeQuery(query))
+		{
+			commit();
+			logQueryExecutionSuccess(query);
 		}
 		else
 		{
-			commit();
-			logMessage(L"Succes table creation");
+			rollBack();
+			logQueryExecutionFailed(query);
 		}
 	}
 
 	int DataBaseConnection::getLastInsertedId()
 	{
-		return static_cast<int>(sqlite3_last_insert_rowid(d->connection));
+		return static_cast<int>(getConnection()->last_insert_rowid());
 	}
 
-	void DataBaseConnection::finalizeStatement(sqlite3_stmt* stmt, const UnicodeString& tableName)
+	bool DataBaseConnection::begin()
 	{
-		if (sqlite3_finalize(stmt) != SQLITE_OK)
-			logError(L"Finalization failed :" + tableName);
+		bool result{ false };
+		try 
+		{
+			*getConnection() << "BEGIN TRANSACTION;";
+			logMessage(L"Begin");
+			result = true;
+		}
+		catch (const sqlite::sqlite_exception& e) 
+		{
+			logError(L"Failed to begin transaction: " + UnicodeString(e.what(), e.what() + strlen(e.what())));
+		}
+		return result;
 	}
 
-	void DataBaseConnection::commit()
+	bool DataBaseConnection::commit()
 	{
-		sqlite3_exec(d->connection, StringToolBox::getUtf8(COMMIT).c_str(), nullptr, nullptr, nullptr);
+		bool result{ false };
+		try 
+		{
+			*getConnection() << "COMMIT;";
+			logMessage(L"Commit");
+			result = true;
+		}
+		catch (const sqlite::sqlite_exception& e)
+		{
+			logError(L"Failed to commit transaction: " + UnicodeString(e.what(), e.what() + strlen(e.what())));
+		}
+		return result;
 	}
 
-	void DataBaseConnection::rollBack()
+	bool DataBaseConnection::rollBack()
 	{
-		sqlite3_exec(d->connection, StringToolBox::getUtf8(ROLLBACK).c_str(), nullptr, nullptr, nullptr);
+		bool result{ false };
+		try 
+		{
+			*getConnection() << "ROLLBACK;";
+			logMessage(L"Rollback");
+			result = true;
+		}
+		catch (const sqlite::sqlite_exception& e) 
+		{
+			logError(L"Failed to rollback transaction: " + UnicodeString(e.what(), e.what() + strlen(e.what())));
+		}
+		return result;
+	}
+
+	void DataBaseConnection::logQueryExecutionSuccess()
+	{
+		logMessage(L"Query executed successfully");
+	}
+
+	void DataBaseConnection::logQueryExecutionSuccess(const UnicodeString& query)
+	{
+		logMessage(L"Query executed successfully: " + query);
+	}
+
+	void DataBaseConnection::logQueryExecutionFailed(const sqlite::sqlite_exception& e)
+	{
+		logError(L"Query execution failed: " + UnicodeString(e.what(), e.what() + strlen(e.what())));
+	}
+
+	void DataBaseConnection::logQueryExecutionFailed(const UnicodeString& query)
+	{
+		logError(L"Query execution failed: " + query);
 	}
 
 #pragma endregion

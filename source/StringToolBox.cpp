@@ -58,7 +58,15 @@ namespace Alpha
 		}
 		AlphaString utf8String(utf8Length, '\0');
 		WideCharToMultiByte(CP_UTF8, 0, wideString.c_str(), -1, &utf8String[0], utf8Length, nullptr, nullptr);
+
+		utf8String.pop_back();
+
 		return utf8String;
+	}
+
+	UnicodeString StringToolBox::getUnicodeString(const AlphaString str)
+	{
+		return getUnicodeString(str.c_str());
 	}
 
 	UnicodeString StringToolBox::getUnicodeString(const AlphaChar* charArray) {

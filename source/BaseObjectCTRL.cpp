@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "BaseObjectCTRL.h"
-#include "DataBaseConnection.h"
 
 namespace Alpha
 {
@@ -83,12 +82,17 @@ namespace Alpha
 
 #pragma region **** Methods ****
 
-	void BaseObjectCTRL::updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt)
+	void BaseObjectCTRL::updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
 	{
 		//TO IMPLEMENT
+
+		// Assuming Category is derived from BaseObject and has a getName method
+		//const auto category = std::static_pointer_cast<Category>(baseObject);
+		//statement << category->getName(); // Bind the value of name, add more bindings as necessary
+
 	}
 
-	void BaseObjectCTRL::updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite3_stmt** stmt)
+	void BaseObjectCTRL::updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
 	{
 		//TO IMPLEMENT
 	}
@@ -96,38 +100,45 @@ namespace Alpha
 	bool BaseObjectCTRL::addBaseObject(const SharedPtr<BaseObject>& baseObject)
 	{
 		bool result{ false };
-		const auto connection = getDataBaseConnection();
+		const auto dbConnection = getDataBaseConnection();
+		const auto connection = dbConnection->getConnection();
 		const auto colColumn = getColColumn();
 		const auto preparedColColumn = StringToolBox::JoinUnicodeString(colColumn);
 
-		UnicodeString query = L"INSERT INTO " + getTableName() + L" (" + preparedColColumn + L") VALUES";
+		UnicodeString query = L"INSERT INTO " + getTableName() + L" (" + preparedColColumn + L") VALUES (";
 		for (int index{ 0 }; index < colColumn->size(); ++index)
-			query += L" (?)";
-		query += L";";
-		
-		sqlite3_stmt* stmt;
-		int code = connection->prepareQuery(query,&stmt);
-		updateQueryValues(baseObject, &stmt);
-
-		if (code != SQLITE_OK)
 		{
-			connection->logQueryPreparationFailed();
-			connection->finalizeStatement(stmt, getTableName());
-			return result;
+			query += L"?";
+			if (index < colColumn->size() - 1)
+				query += L", ";
 		}
+		query += L");";
 
-		if (sqlite3_step(stmt) == SQLITE_DONE)
+		try
 		{
-			int nbrParameterCount = sqlite3_bind_parameter_count(stmt);
+			dbConnection->begin(),
+			*connection << StringToolBox::getUtf8(query).c_str();
+			auto statement = *connection << StringToolBox::getUtf8(query).c_str();
+			updateQueryValues(baseObject, statement);
+			statement.execute();
+
+			// Log the successful insertion
 			UnicodeString message = L": INSERT INTO : ";
-			for (int index{ 0 }; index < nbrParameterCount; ++index)
-				addValueToMessage(&stmt, index, &message);
+			for (const auto& col : *colColumn)
+			{
+				message += col + L", ";
+			}
 			logMessage(getTableName() + message);
-			updateObjectValues(baseObject, &stmt);
+			updateObjectValues(baseObject, statement);
+
+			dbConnection->commit();
 			result = true;
 		}
-
-		connection->finalizeStatement(stmt, getTableName());
+		catch (const sqlite::sqlite_exception& e)
+		{
+			dbConnection->rollBack();
+			logError(L"SQLite error: " + StringToolBox::getUnicodeString(e.what()));
+		}
 		return result;
 	}
 	bool BaseObjectCTRL::modifyBaseObject(const SharedPtr<BaseObject>& baseObject)
@@ -138,40 +149,6 @@ namespace Alpha
 	{
 		return false;
 	}
-
-	void BaseObjectCTRL::addValueToMessage(sqlite3_stmt** stmt, int index, UnicodeString* message)
-	{
-		const auto type = sqlite3_column_type(*stmt, index);
-		const auto value = getColumnValueAsString(stmt,index,type);
-		message->append(index == 0 ? value : STRING_SEPARATOR + value);
-	}
-
-	UnicodeString BaseObjectCTRL::getColumnValueAsString(sqlite3_stmt** stmt, int index, int type)
-	{
-		UnicodeString result;
-
-		switch (type)
-		{
-		case SQLITE_INTEGER:
-		{
-			const auto value = sqlite3_column_int(*stmt, index);
-			result = std::to_wstring(value);
-			break;
-		}
-		case SQLITE_TEXT:
-		{
-			const auto value = sqlite3_column_text(*stmt, index);
-			result = StringToolBox::getUnicodeString(value);
-			break;
-		}
-		default:
-			logError(L"Unknown returned type");
-			break;
-		}
-
-		return result;
-	}
-
 #pragma endregion
 
 }

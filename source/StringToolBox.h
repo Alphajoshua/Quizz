@@ -39,6 +39,7 @@ namespace Alpha
 
 	public:
 		static AlphaString getUtf8(const UnicodeString& wideString);
+		static UnicodeString getUnicodeString(const AlphaString str);
 		static UnicodeString getUnicodeString(const AlphaChar* charArray);
 		static UnicodeString getUnicodeString(const unsigned char* charArray);
 		static UnicodeString JoinUnicodeString(const SharedPtr<std::vector<UnicodeString>>& colUnicodeString, const UnicodeChar unicodeStringSeparator = STRING_SEPARATOR);
