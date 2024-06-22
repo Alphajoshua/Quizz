@@ -85,40 +85,47 @@ namespace Alpha
 		ButtonToolBox::setDefaultStyle(d->modifyButton);
 		ButtonToolBox::setDefaultStyle(d->deleteButton);
 
-		auto createOnClick = [&]() {
-				const auto colCategory = getColCategory();
-				UnicodeString newName = StringToolBox::getUnicodeString(d->textBuffer );
-				if (!newName.empty() && std::find_if(colCategory->begin(), colCategory->end(), [newName](const SharedPtr<Category>& category) {return category->getName() == newName; }) == colCategory->end())
-				{
-					const auto newCategory = refNew<Category>();
-					newCategory->setName(newName);
-					getCategoryCTRL()->addCategory(newCategory);
-					colCategory->push_back(newCategory);
-					UnicodeString emptyString{ EmptyUnicodeString };
-					strcpy_s(d->textBuffer, StringToolBox::getUtf8(emptyString).c_str() );
-					setIndexSelectedCategory(static_cast<int>(colCategory->size()) - 1);
-					setSelectedCategory(colCategory->at(getIndexSelectedCategory()));
-				}
-				return false;
+		auto createOnClick = [&]() 
+		{
+			const auto colCategory = getColCategory();
+			UnicodeString newName = StringToolBox::getUnicodeString(d->textBuffer );
+			if( !newName.empty() && !isNameAlreadyUsed(colCategory, newName) )
+			{
+				const auto newCategory = refNew<Category>();
+				newCategory->setName(newName);
+				getCategoryCTRL()->addCategory(newCategory);
+				colCategory->push_back(newCategory);
+				UnicodeString emptyString { EmptyUnicodeString };
+				strcpy_s(d->textBuffer, StringToolBox::getUtf8(emptyString).c_str());
+				setIndexSelectedCategory(static_cast<int>( colCategory->size() ) - 1);
+				setSelectedCategory(colCategory->at(getIndexSelectedCategory()));
+			}
+			return false;
 		};
 		d->createButton->setOnClick(std::function<bool()>(createOnClick));
 		
-		auto modifyOnClick = [&]() {
+		auto modifyOnClick = [&]() 
+		{
 			if (int index = getIndexSelectedCategory(); index > -1)
 			{
 				const auto colCategory = getColCategory();
 				const auto selectedCategory = getSelectedCategory();
 				UnicodeString newName = StringToolBox::getUnicodeString(d->textBuffer);
-				if (!newName.empty() && std::find_if(colCategory->begin(), colCategory->end(), [newName](const SharedPtr<Category>& category) {return category->getName() == newName; }) == colCategory->end())
+				if( !empty(selectedCategory) && !newName.empty() && newName!=selectedCategory->getName() && !isNameAlreadyUsed(colCategory, newName) )
+				{
 					selectedCategory->setName(newName);
+					getCategoryCTRL()->modifyCategory(selectedCategory);
+				}
 			}
-				return false;
-			};
+			return false;
+		};
 		d->modifyButton->setOnClick(std::function<bool()>(modifyOnClick));
 
-		auto deleteOnClick = [&]() {
+		auto deleteOnClick = [&]() 
+		{
 			if (int index = getIndexSelectedCategory(); index > -1)
 			{
+				const auto selectedCategory = getSelectedCategory();
 				const auto colCategory = getColCategory();
 				colCategory->erase(colCategory->begin() + getIndexSelectedCategory());
 				if (index > 0)
@@ -133,9 +140,10 @@ namespace Alpha
 					strcpy_s(d->textBuffer, StringToolBox::getUtf8(emptyString).c_str());
 
 				}
+				getCategoryCTRL()->deleteCategory(selectedCategory);
 			}
 			return false;
-			};
+		};
 		d->deleteButton->setOnClick(std::function<bool()>(deleteOnClick));
 
 		setInitialized(true);
@@ -158,6 +166,12 @@ namespace Alpha
 		d->createButton->setStartingDrawingZone({ startingDrawingZone.x + 200 + 5, startingDrawingZone.y + 10 });
 		d->modifyButton->setStartingDrawingZone({ d->createButton->getEndingDrawingZone().x, getStartingDrawingZone().y + 10 });
 		d->deleteButton->setStartingDrawingZone({ d->modifyButton->getEndingDrawingZone().x, getStartingDrawingZone().y + 10 });
+
+		const auto hasSelection = !empty(getSelectedCategory());
+		const auto validName = !StringToolBox::getUnicodeString(d->textBuffer).empty();
+		d->createButton->setEnabled(validName);
+		d->modifyButton->setEnabled(hasSelection && validName);
+		d->deleteButton->setEnabled(hasSelection);
 
 		d->createButton->render();
 		d->modifyButton->render();
@@ -226,10 +240,14 @@ namespace Alpha
 		d->categoryCTRL = categoryCTRL;
 	}
 
-
 #pragma endregion
 
 #pragma region **** Methods ****
+
+	bool ManageCategoryPage::isNameAlreadyUsed(const SharedPtr<std::vector<SharedPtr<Category>>>& colCategory, const UnicodeString& name)
+	{
+		return std::find_if(colCategory->begin(), colCategory->end(), [name](const SharedPtr<Category>& category) {return category->getName() == name; }) != colCategory->end();
+	}
 
 #pragma endregion
 

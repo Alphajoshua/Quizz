@@ -55,6 +55,9 @@ namespace Alpha
 		int getVerticalPadding()const;
 		void setVerticalPadding(int padding);
 
+		bool isEnabled()const;
+		void setEnabled(bool value);
+
 	protected:
 
 	private:

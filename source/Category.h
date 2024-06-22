@@ -29,9 +29,6 @@ namespace Alpha
 #pragma region **** Accessors ****
 
 	public:
-		int getId()const;
-		void setId(int value);
-
 		UnicodeString getName()const;
 		void setName(const UnicodeString& name);
 

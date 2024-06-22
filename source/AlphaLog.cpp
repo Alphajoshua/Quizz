@@ -72,11 +72,16 @@ namespace Alpha
 	}
 	void writeLog(const UnicodeString& message)
 	{
-		if (std::wofstream outputFile(LOG_FILE_PATH, std::ios_base::app); outputFile.is_open())
+		if ( std::wofstream outputFile; isFileOpened(outputFile) )
 		{
 			outputFile << StringToolBox::getUtf8(message).c_str() << std::endl;
 			outputFile.close();
 		}
 		
+	}
+	bool isFileOpened(std::wofstream& outputFile)
+	{
+		outputFile.open(LOG_FILE_PATH, std::ios_base::app);
+		return outputFile.is_open();
 	}
 }

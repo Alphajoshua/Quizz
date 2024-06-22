@@ -32,6 +32,7 @@ namespace Alpha
 		const auto colColumn = refNew<std::vector<UnicodeString>>();
 		colColumn->push_back(L"NAME");
 
+		setPrimaryKeyColumn(L"ID");
 		setColColumn(colColumn);
 		setTableName(L"CATEGORY");
 	}
@@ -57,6 +58,13 @@ namespace Alpha
 		category->setId(getDataBaseConnection()->getLastInsertedId());
 	}
 
+	void CategoryCTRL::updatePrimaryKeyValue(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
+	{
+		const auto category = refCast<Category>(baseObject);
+		const auto id = std::to_string( category->getId() );
+		statement << id;
+	}
+
 #pragma endregion
 
 #pragma region **** Accessors ****
@@ -73,9 +81,9 @@ namespace Alpha
 	{
 		modifyBaseObject(refCast<BaseObject>(category));
 	}
-	void CategoryCTRL::removeCategory(const SharedPtr<Category>& category)
+	void CategoryCTRL::deleteCategory(const SharedPtr<Category>& category)
 	{
-		removeBaseObject(refCast<BaseObject>(category));
+		deleteBaseObject(refCast<BaseObject>(category));
 	}
 
 	SharedPtr<std::vector<SharedPtr<Category>>> CategoryCTRL::loadColCategory() const

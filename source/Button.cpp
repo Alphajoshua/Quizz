@@ -19,7 +19,7 @@ namespace Alpha
 	public:
 		std::wstring displayedText;
 		ImVec2 buttonSize;
-		ImVec4 hoverBackgroundColor, activeBackgroundColor, selectedBackgroundColor;
+		ImVec4 hoverBackgroundColor, activeBackgroundColor, selectedBackgroundColor, disabledBackgroundColor;
 		std::function<bool()> onClick{ []() {return false; } };
 		bool isSelected{ false };
 	};
@@ -45,19 +45,17 @@ namespace Alpha
 	bool Button::render()
 	{
 		bool result = false;
-
-		if (isSelected())
-			ImGui::PushStyleColor(ImGuiCol_Button, getSelectedBackgroundColor());	//Selected color
+		
+		if( isEnabled() )
+			setEnabledStyle();
 		else
-			ImGui::PushStyleColor(ImGuiCol_Button, getStillBackgroundColor());		//Still color
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, getHoverBackgroundColor());	//Hover color
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, getActiveBackgroundColor());	//Active color
-
+			setDisabledStyle();
+		
 		setDrawingCursor(getStartingDrawingZone());
 		increaseHorizontalDrawingCursor( static_cast<float>( getHorizontalPadding() ) );
 		increaseVerticalDrawingCursor( static_cast<float>( getVerticalPadding() ) );
 
-		if (ImGui::Button( StringToolBox::getUtf8(getDisplayedText()).c_str(), getButtonSize()))
+		if (ImGui::Button( StringToolBox::getUtf8(getDisplayedText()).c_str(), getButtonSize()) && isEnabled())
 		{
 			result = onClick();
 		}
@@ -95,6 +93,16 @@ namespace Alpha
 		d->displayedText = displayedText;
 	}
 
+	ImVec4 Button::getDisabledBackgroundColor() const
+	{
+		return d->disabledBackgroundColor;
+	}
+
+	void Button::setDisabledBackgroundColor(const ImVec4& color)
+	{
+		d->disabledBackgroundColor = color;
+	}
+
 	ImVec4 Button::getStillBackgroundColor() const
 	{
 		return getBackgroundColor();
@@ -129,6 +137,21 @@ namespace Alpha
 	void Button::setSelectedBackgroundColor(const ImVec4& color)
 	{
 		d->selectedBackgroundColor = color;
+	}
+	void Button::setEnabledStyle()
+	{
+		if( isSelected() )
+			ImGui::PushStyleColor(ImGuiCol_Button, getSelectedBackgroundColor());	//Selected color
+		else
+			ImGui::PushStyleColor(ImGuiCol_Button, getStillBackgroundColor());		//Still color
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, getHoverBackgroundColor());	//Hover color
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, getActiveBackgroundColor());	//Active color
+	}
+	void Button::setDisabledStyle()
+	{
+		ImGui::PushStyleColor(ImGuiCol_Button, getDisabledBackgroundColor());	//Selected color
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, getDisabledBackgroundColor());	//Hover color
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, getDisabledBackgroundColor());	//Active color
 	}
 	void Button::setOnClick(std::function<bool()> callback)
 	{

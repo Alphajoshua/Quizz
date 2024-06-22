@@ -38,6 +38,9 @@ namespace Alpha
 		std::wstring getDisplayedText()const;
 		void setDisplayedText(const std::wstring& displayedText);
 
+		ImVec4 getDisabledBackgroundColor()const;
+		void setDisabledBackgroundColor(const ImVec4& color);
+
 		ImVec4 getStillBackgroundColor()const;
 		void setStillBackgroundColor(const ImVec4& color);
 		
@@ -49,6 +52,9 @@ namespace Alpha
 		
 		ImVec4 getSelectedBackgroundColor()const;
 		void setSelectedBackgroundColor(const ImVec4& color);
+
+		void setEnabledStyle();
+		void setDisabledStyle();
 
 		void setOnClick(std::function<bool()> callback);
 

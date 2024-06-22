@@ -18,7 +18,7 @@ namespace Alpha
 	{
 	public:
 		WeakPtr<DataBaseConnection> connection;
-		UnicodeString tableName;
+		UnicodeString tableName, primaryKeyColumn;
 		SharedPtr<std::vector<UnicodeString>> colColumn;
 	};
 
@@ -78,6 +78,18 @@ namespace Alpha
 		d->colColumn = colColumn;
 	}
 
+	UnicodeString BaseObjectCTRL::getPrimaryKeyColumn() const
+	{
+		if( d->primaryKeyColumn.empty() )
+			logError(L"You have to set a colColumn before you use it");
+		return d->primaryKeyColumn;
+	}
+
+	void BaseObjectCTRL::setPrimaryKeyColumn(const UnicodeString& value)
+	{
+		d->primaryKeyColumn = value;
+	}
+
 #pragma endregion
 
 #pragma region **** Methods ****
@@ -93,6 +105,11 @@ namespace Alpha
 	}
 
 	void BaseObjectCTRL::updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
+	{
+		//TO IMPLEMENT
+	}
+
+	void BaseObjectCTRL::updatePrimaryKeyValue(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement)
 	{
 		//TO IMPLEMENT
 	}
@@ -144,11 +161,81 @@ namespace Alpha
 	}
 	bool BaseObjectCTRL::modifyBaseObject(const SharedPtr<BaseObject>& baseObject)
 	{
-		return false;
+		bool result { false };
+		const auto dbConnection = getDataBaseConnection();
+		const auto connection = dbConnection->getConnection();
+		const auto primaryKeyColumn = getPrimaryKeyColumn();
+		const auto colColumn = getColColumn();
+		const auto preparedColColumn = StringToolBox::JoinUnicodeString(colColumn);
+
+		UnicodeString query = L"UPDATE " + getTableName() + L" SET ";
+		for( int index { 0 }; index < colColumn->size(); ++index )
+		{
+			query += colColumn->at(index);
+			query += L"=?";
+			if( index < colColumn->size() - 1 )
+				query += L", ";
+		}
+		query += L" WHERE " + primaryKeyColumn + L"=?";
+
+		try
+		{
+			dbConnection->begin();
+			auto statement = *connection << StringToolBox::getUtf8(query);
+			updateQueryValues(baseObject, statement);
+			updatePrimaryKeyValue(baseObject, statement);
+			statement.execute();
+
+			// Log the successful medification
+			UnicodeString message = L": UPDATE " + getTableName() + L" SET ";
+			for( const auto& col : *colColumn )
+			{
+				message += col;
+				if( colColumn->size() > 1 )
+					message += L", ";
+			}
+			message += L" WHERE PK=" + getPrimaryKeyColumn() + L" : " + std::to_wstring(baseObject->getId());
+			logMessage(getTableName() + message);
+
+			dbConnection->commit();
+			result = true;
+		}
+		catch( const sqlite::sqlite_exception& e )
+		{
+			dbConnection->rollBack();
+			logError(L"SQLite error: " + StringToolBox::getUnicodeString(e.what()));
+		}
+		return result;
 	}
-	bool BaseObjectCTRL::removeBaseObject(const SharedPtr<BaseObject>& baseObject)
+	bool BaseObjectCTRL::deleteBaseObject(const SharedPtr<BaseObject>& baseObject)
 	{
-		return false;
+		bool result { false };
+		const auto dbConnection = getDataBaseConnection();
+		const auto connection = dbConnection->getConnection();
+		const auto primaryKeyColumn = getPrimaryKeyColumn();
+
+		UnicodeString query = L"DELETE FROM " + getTableName() + L" WHERE " + primaryKeyColumn + L"=?";
+		
+		try
+		{
+			dbConnection->begin();
+			auto statement = *connection << StringToolBox::getUtf8(query);
+			statement << std::to_string(baseObject->getId());
+			statement.execute();
+
+			// Log the successful deletion
+			UnicodeString message = L": DELETE FROM " + getTableName() + L" WHERE " + primaryKeyColumn + L"=" + std::to_wstring(baseObject->getId());
+			logMessage(getTableName() + message);
+
+			dbConnection->commit();
+			result = true;
+		}
+		catch( const sqlite::sqlite_exception& e )
+		{
+			dbConnection->rollBack();
+			logError(L"SQLite error: " + StringToolBox::getUnicodeString(e.what()));
+		}
+		return result;
 	}
 #pragma endregion
 

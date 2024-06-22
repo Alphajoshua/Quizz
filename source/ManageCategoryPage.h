@@ -59,6 +59,7 @@ namespace Alpha
 	protected:
 
 	private:
+		bool isNameAlreadyUsed( const SharedPtr<std::vector<SharedPtr<Category>>>& colCategory, const UnicodeString& name);
 
 #pragma endregion
 

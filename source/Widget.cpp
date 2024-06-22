@@ -20,6 +20,7 @@ namespace Alpha
 		ImVec2 startingDrawingZone, sizeDrawingZone;
 		ImVec4 backgroundColor;
 		int horizontalPadding{ DEFAULT_INT }, verticalPadding{ DEFAULT_INT };
+		bool enabled { true };
 	};
 
 #pragma endregion
@@ -130,6 +131,14 @@ namespace Alpha
 	void Widget::setVerticalPadding( int padding )
 	{
 		d->verticalPadding = padding;
+	}
+	bool Widget::isEnabled() const
+	{
+		return d->enabled;
+	}
+	void Widget::setEnabled(bool value)
+	{
+		d->enabled = value;
 	}
 #pragma endregion
 

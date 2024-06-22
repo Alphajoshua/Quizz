@@ -16,4 +16,6 @@ namespace Alpha
 	void debugDisplayLog(const UnicodeString& message);
 	void displayLog(const UnicodeString& message);
 	void writeLog(const UnicodeString& message);
+
+	bool isFileOpened(std::wofstream& outputFile);
 }

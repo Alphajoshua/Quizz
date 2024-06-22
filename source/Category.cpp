@@ -16,7 +16,6 @@ namespace Alpha
 	class Category::Private
 	{
 	public:
-		int id{ 0 };
 		UnicodeString name;
 
 	};
@@ -42,16 +41,6 @@ namespace Alpha
 #pragma endregion
 
 #pragma region **** Accessors ****
-
-	int Category::getId() const
-	{
-		return d->id;
-	}
-
-	void Category::setId(int value)
-	{
-		d->id = value;
-	}
 
 	UnicodeString Category::getName() const
 	{

@@ -25,6 +25,8 @@ namespace Alpha
 		virtual void updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) override;
 		virtual void updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) override;
 
+		virtual void updatePrimaryKeyValue(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) override;
+
 	private:
 
 #pragma endregion
@@ -44,7 +46,7 @@ namespace Alpha
 	public:
 		void addCategory( const SharedPtr<Category>& category );
 		void modifyCategory(const SharedPtr<Category>& category);
-		void removeCategory(const SharedPtr<Category>& category);
+		void deleteCategory(const SharedPtr<Category>& category);
 
 		SharedPtr<std::vector<SharedPtr<Category>>> loadColCategory()const;
 

@@ -38,6 +38,9 @@ namespace Alpha
 		virtual SharedPtr<std::vector<UnicodeString>> getColColumn()const;
 		virtual void setColColumn(const SharedPtr<std::vector<UnicodeString>>& colColumn)const;
 
+		UnicodeString getPrimaryKeyColumn()const;
+		void setPrimaryKeyColumn(const UnicodeString& value);
+
 	protected:
 
 	private:
@@ -52,9 +55,12 @@ namespace Alpha
 		virtual void updateQueryValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) = 0;
 		virtual void updateObjectValues(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) = 0;
 
+		virtual void updatePrimaryKeyValue(const SharedPtr<BaseObject>& baseObject, sqlite::database_binder& statement) = 0;
+
+
 		bool addBaseObject(const SharedPtr<BaseObject>& baseObject);
 		bool modifyBaseObject(const SharedPtr<BaseObject>& baseObject);
-		bool removeBaseObject(const SharedPtr<BaseObject>& baseObject);
+		bool deleteBaseObject(const SharedPtr<BaseObject>& baseObject);
 
 #pragma endregion
 

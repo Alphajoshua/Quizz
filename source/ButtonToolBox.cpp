@@ -50,11 +50,13 @@ namespace Alpha
 
 	void ButtonToolBox::setDefaultStyle(const SharedPtr<Button>& button)
 	{
+		ImVec4 disabledColor(0.33f, 0.41f, 0.54f, 1.0f);
 		ImVec4 stillColor(0.29f, 0.42f, 0.65f, 1.0f);
 		ImVec4 hoverColor(0.20f, 0.34f, 0.58f, 1.0f);
 		ImVec4 activeColor(0.20f, 0.34f, 0.58f, 1.0f);
 		ImVec4 selectedColor(0.18f, 0.32f, 0.62f, 1.0f);
 
+		button->setDisabledBackgroundColor(disabledColor);
 		button->setStillBackgroundColor(stillColor);
 		button->setHoverBackgroundColor(hoverColor);
 		button->setSelectedBackgroundColor(selectedColor);
@@ -65,11 +67,13 @@ namespace Alpha
 
 	void ButtonToolBox::setHomepageStyle(const SharedPtr<Button>& button)
 	{
+		ImVec4 disabledColor(0.33f, 0.41f, 0.54f, 1.0f);
 		ImVec4 stillColor(0.18f, 0.32f, 0.62f, 1.0f);
 		ImVec4 hoverColor(0.29f, 0.42f, 0.65f, 1.0f);
 		ImVec4 activeColor(0.20f, 0.34f, 0.58f, 1.0f);
 		ImVec4 selectedColor(0.20f, 0.34f, 0.58f, 1.0f);
 
+		button->setDisabledBackgroundColor(disabledColor);
 		button->setStillBackgroundColor(stillColor);
 		button->setHoverBackgroundColor(hoverColor);
 		button->setSelectedBackgroundColor(selectedColor);
@@ -80,11 +84,13 @@ namespace Alpha
 
 	void ButtonToolBox::setNavMenuStyle(const SharedPtr<Button>& button)
 	{
+		ImVec4 disabledColor(0.33f, 0.41f, 0.54f, 1.0f);
 		ImVec4 stillColor(0.29f, 0.42f, 0.65f, 1.0f);
 		ImVec4 hoverColor(0.20f, 0.34f, 0.58f, 1.0f);
 		ImVec4 activeColor(0.20f, 0.34f, 0.58f, 1.0f);
 		ImVec4 selectedColor(0.18f, 0.32f, 0.62f, 1.0f);
 
+		button->setDisabledBackgroundColor(disabledColor);
 		button->setStillBackgroundColor(stillColor);
 		button->setHoverBackgroundColor(hoverColor);
 		button->setSelectedBackgroundColor(selectedColor);
