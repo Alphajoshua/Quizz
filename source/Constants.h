@@ -62,6 +62,8 @@ namespace Alpha
 	const UnicodeString LOG_SEPARATOR{ L"#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#" };
 	const UnicodeChar STRING_SEPARATOR{ L',' };
 
+	const AlphaString HIDDEN_PREFIX{ "##" };
+	const int DEFAULT_BUFFER_SIZE { 256 };
 #pragma endregion
 
 #pragma region *** DATABASE ***

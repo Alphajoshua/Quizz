@@ -5,6 +5,7 @@
 #include "Category.h"
 #include "CategoryCTRL.h"
 #include "Button.h"
+#include "TextElement.h"
 #include "ButtonToolBox.h"
 
 namespace Alpha
@@ -23,7 +24,6 @@ namespace Alpha
 	class ManageCategoryPage::Private
 	{
 	public:
-		char textBuffer[255];
 
 		SharedPtr<std::vector<SharedPtr<Category>>> colCategory{ refNew<std::vector<SharedPtr<Category>>>() };
 		
@@ -31,6 +31,8 @@ namespace Alpha
 		WeakPtr<Category> selectedCategory;
 		
 		SharedPtr<Button> deleteButton{ refNew<Button>() }, createButton{ refNew<Button>() }, modifyButton{ refNew<Button>() };
+
+		SharedPtr<TextElement> categoryNameElement { refNew<TextElement>() };
 
 		SharedPtr<CategoryCTRL> categoryCTRL{ refNew<CategoryCTRL>() };
 	};
@@ -68,6 +70,12 @@ namespace Alpha
 		//	category->setName(L"Category " + std::to_wstring(index));
 		//	colCategory->push_back(category);
 		//}
+
+		d->categoryNameElement->setName(L"Name");
+		d->categoryNameElement->setBufferSize(256);
+		d->categoryNameElement->setWidth(200.0f);
+		d->categoryNameElement->init();
+
 		const auto windowSize = getParent()->getWindowSize();
 		float buttonWidth = windowSize.x / 10.0f;
 		float buttonHeight = windowSize.y / 20.0f;
@@ -88,15 +96,15 @@ namespace Alpha
 		auto createOnClick = [&]() 
 		{
 			const auto colCategory = getColCategory();
-			UnicodeString newName = StringToolBox::getUnicodeString(d->textBuffer );
-			if( !newName.empty() && !isNameAlreadyUsed(colCategory, newName) )
+			auto newName = refNew<UnicodeString>();
+			d->categoryNameElement->mapBufferToString(newName);
+			if( !newName->empty() && !isNameAlreadyUsed(colCategory, newName) )
 			{
 				const auto newCategory = refNew<Category>();
-				newCategory->setName(newName);
+				newCategory->setName(*newName);
 				getCategoryCTRL()->addCategory(newCategory);
 				colCategory->push_back(newCategory);
-				UnicodeString emptyString { EmptyUnicodeString };
-				strcpy_s(d->textBuffer, StringToolBox::getUtf8(emptyString).c_str());
+				d->categoryNameElement->resetBuffer();
 				setIndexSelectedCategory(static_cast<int>( colCategory->size() ) - 1);
 				setSelectedCategory(colCategory->at(getIndexSelectedCategory()));
 			}
@@ -110,10 +118,10 @@ namespace Alpha
 			{
 				const auto colCategory = getColCategory();
 				const auto selectedCategory = getSelectedCategory();
-				UnicodeString newName = StringToolBox::getUnicodeString(d->textBuffer);
-				if( !empty(selectedCategory) && !newName.empty() && newName!=selectedCategory->getName() && !isNameAlreadyUsed(colCategory, newName) )
+				const auto modifiedName = d->categoryNameElement->getText();
+				if( !empty(selectedCategory) && !modifiedName.empty() && modifiedName != selectedCategory->getName() && !isNameAlreadyUsed(colCategory, modifiedName) )
 				{
-					selectedCategory->setName(newName);
+					selectedCategory->setName(modifiedName);
 					getCategoryCTRL()->modifyCategory(selectedCategory);
 				}
 			}
@@ -136,9 +144,7 @@ namespace Alpha
 				else
 				{
 					setIndexSelectedCategory(-1);
-					UnicodeString emptyString{ EmptyUnicodeString };
-					strcpy_s(d->textBuffer, StringToolBox::getUtf8(emptyString).c_str());
-
+					d->categoryNameElement->resetBuffer();
 				}
 				getCategoryCTRL()->deleteCategory(selectedCategory);
 			}
@@ -153,25 +159,24 @@ namespace Alpha
 	{
 		Page::render();
 		const auto colCategory = getColCategory();
+		const auto selectedCategory = getSelectedCategory();
 
 		const auto startingDrawingZone = getStartingDrawingZone();
 		const auto sizeDrawingZone = getSizeDrawingZone();
 
-		setHorizontalCursor(startingDrawingZone.x + 10);
-		setVerticalCursor(startingDrawingZone.y + 10);
-		
-		ImGui::SetNextItemWidth(200);
-		ImGui::InputText("Name", d->textBuffer, IM_ARRAYSIZE(d->textBuffer), ImGuiInputTextFlags_None);
+		d->categoryNameElement->setStartingDrawingZone({ startingDrawingZone.x + 10, startingDrawingZone.y + 10 });
+		d->categoryNameElement->render();
 
 		d->createButton->setStartingDrawingZone({ startingDrawingZone.x + 200 + 5, startingDrawingZone.y + 10 });
 		d->modifyButton->setStartingDrawingZone({ d->createButton->getEndingDrawingZone().x, getStartingDrawingZone().y + 10 });
 		d->deleteButton->setStartingDrawingZone({ d->modifyButton->getEndingDrawingZone().x, getStartingDrawingZone().y + 10 });
 
-		const auto hasSelection = !empty(getSelectedCategory());
-		const auto validName = !StringToolBox::getUnicodeString(d->textBuffer).empty();
-		d->createButton->setEnabled(validName);
-		d->modifyButton->setEnabled(hasSelection && validName);
-		d->deleteButton->setEnabled(hasSelection);
+		const auto hasSelection = !empty(selectedCategory);
+		const auto name = d->categoryNameElement->getText();
+		const auto validName = !name.empty();
+		d->createButton->setEnabled(validName && !isNameAlreadyUsed(colCategory, name));
+		d->modifyButton->setEnabled(hasSelection && validName && name != selectedCategory->getName());
+		d->deleteButton->setEnabled(hasSelection && validName && name == selectedCategory->getName());
 
 		d->createButton->render();
 		d->modifyButton->render();
@@ -227,7 +232,7 @@ namespace Alpha
 	void ManageCategoryPage::setSelectedCategory(const SharedPtr<Category>& category)
 	{
 		d->selectedCategory = category;
-		strcpy_s(d->textBuffer, StringToolBox::getUtf8( category->getName() ).c_str());
+		d->categoryNameElement->mapStringToBuffer(category->getName());
 	}
 
 	SharedPtr<CategoryCTRL> ManageCategoryPage::getCategoryCTRL() const
@@ -247,6 +252,11 @@ namespace Alpha
 	bool ManageCategoryPage::isNameAlreadyUsed(const SharedPtr<std::vector<SharedPtr<Category>>>& colCategory, const UnicodeString& name)
 	{
 		return std::find_if(colCategory->begin(), colCategory->end(), [name](const SharedPtr<Category>& category) {return category->getName() == name; }) != colCategory->end();
+	}
+
+	bool ManageCategoryPage::isNameAlreadyUsed(const SharedPtr<std::vector<SharedPtr<Category>>>& colCategory, const SharedPtr<UnicodeString>& name)
+	{
+		return std::find_if(colCategory->begin(), colCategory->end(), [name](const SharedPtr<Category>& category) {return category->getName() == *name; }) != colCategory->end();
 	}
 
 #pragma endregion

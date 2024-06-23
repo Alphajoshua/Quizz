@@ -49,6 +49,11 @@ namespace Alpha
 
 #pragma region **** Methods ****
 
+	AlphaString StringToolBox::getUtf8(const SharedPtr<UnicodeString>& wideString)
+	{
+		return getUtf8(*wideString);
+	}
+
 	AlphaString StringToolBox::getUtf8(const UnicodeString& wideString)
 	{
 		int utf8Length = WideCharToMultiByte(CP_UTF8, 0, wideString.c_str(), -1, nullptr, 0, nullptr, nullptr);

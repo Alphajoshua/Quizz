@@ -38,6 +38,7 @@ namespace Alpha
 #pragma region **** Methods ****
 
 	public:
+		static AlphaString getUtf8(const SharedPtr<UnicodeString>& wideString);
 		static AlphaString getUtf8(const UnicodeString& wideString);
 		static UnicodeString getUnicodeString(const AlphaString str);
 		static UnicodeString getUnicodeString(const AlphaChar* charArray);

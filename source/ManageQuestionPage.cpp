@@ -57,24 +57,6 @@ namespace Alpha
 	{
 		setBackGroundColor({ 0.18f, 0.32f, 0.62f, 1.0f });
 
-		const auto colCategory = getColCategory();
-		for (int index{ 0 }; index < 3; ++index)
-		{
-			const auto category = refNew<Category>();
-			category->setId(index);
-			category->setName( L"Category " + std::to_wstring(index));
-			colCategory->push_back(category);
-		}
-
-		const auto colQuestion = getColQuestion();
-		for (int index{ 0 }; index < 10; ++index)
-		{
-			const auto question = refNew<Question>();
-			question->setId(index);
-			question->setQuestionText( L"Question " + std::to_wstring(index));
-			colQuestion->push_back(question);
-		}
-
 		setInitialized(true);
 	}
 
